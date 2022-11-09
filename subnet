@@ -1,0 +1,84 @@
+#!/bin/bash
+
+# Author: Aarón Da Silva Martínez
+
+# Colores
+GREEN="\e[0;32m\033[1m"
+RESET="\033[0m\e[0m"
+RED="\e[0;31m\033[1m"
+BLUE="\e[0;34m\033[1m"
+YELLOW="\e[0;33m\033[1m"
+PURPLE="\e[0;35m\033[1m"
+TURQUOISE="\e[0;36m\033[1m"
+GRAY="\e[0;37m\033[1m"
+ORANGE="\e[38;5;208m"
+
+D2B=({0..1}{0..1}{0..1}{0..1}{0..1}{0..1}{0..1}{0..1})
+
+IFS=.
+echo -e "${BLUE}Introduce la dirección ip:${RESET} "
+read -r ip1 ip2 ip3 ip4
+
+echo -e "${BLUE}Introduce la máscara de subred:${RESET} "
+read -r m1 m2 m3 m4
+
+echo -e "\n\n${PURPLE}================= NETINFO =================${RESET}\n"
+
+maskBin=$(echo ${D2B[$m1]} ${D2B[$m2]} ${D2B[$m3]} ${D2B[$m4]})
+unos=$(grep -o "1" <<< "$maskBin" | wc -l)
+
+ip1=$(echo $[ $ip1 & $m1 ])
+ip2=$(echo $[ $ip2 & $m2 ])
+ip3=$(echo $[ $ip3 & $m3 ])
+ip4=$(echo $[ $ip4 & $m4 ])
+
+dirRed=$(echo $ip1.$ip2.$ip3.$ip4)
+redBin=$(echo ${D2B[$ip1]} ${D2B[$ip2]} ${D2B[$ip3]} ${D2B[$ip4]})
+hosts=$(echo "scale=10; 2^(32-$unos)-2" | bc)
+
+#####NETMASK VALIDATOR######
+
+IFS=$' \t\n'
+
+gmask=($(echo $maskBin | sed "s/\s//g" | sed "s/\B/&\n/g" ))
+
+#echo ${gmask[@]}
+
+lastInd=$((${#gmask[@]}-1))
+
+#echo $lastInd
+
+c=0
+k=0
+
+for i in ${gmask[@]};
+do
+    if [[ $i -eq "0" ]];then
+    break
+    fi
+    last=$(($c + 1 ))
+    let c+=1
+done
+
+#echo ${gmask[@]:0:$last}
+bmask=($(echo ${gmask[@]:$last:$lastInd}))
+
+good=0
+
+for j in ${bmask[@]};
+do
+    if [[ $j -eq "1" ]];then
+        echo -e "${RED}MÁSCARA ERRONEA${RESET}"
+	let good+=1
+	break
+    fi
+
+done
+
+if [[ $good -eq 0 ]]; then
+	echo -e "${ORANGE}NETMASK:${RESET} \t\t$maskBin"
+	echo -e "${ORANGE}CIDR:${RESET} \t\t\t/$unos"
+	echo -e "${ORANGE}NETWORK DIRECTION:${RESET} \t$dirRed"
+	echo -e "${ORANGE}BINARY NETWORK:${RESET} \t$redBin"
+	echo -e "${ORANGE}Nº OF POSSIBLE HOSTS:${RESET} \t$hosts\n"
+fi
