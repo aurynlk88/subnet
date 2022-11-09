@@ -16,13 +16,21 @@ Esta utilidad nos dará información relevante de la subred.
 <br>
 ### Instalación
 1. Clonar el repositorio:
-`git clone https://github.com/aurynlk88/subnet.git`
+```bash
+git clone https://github.com/aurynlk88/subnet.git
+```
 
 2. Situarnos en la carpeta:
-`cd subnet`
+```bash
+cd subnet
+```
 
 3. Dar permisos de ejecución:
-`sudo chmod +x subnet`
+```bash
+sudo chmod +x subnet
+```
 
 4. Mover el script a la ruta de los binarios:
-`sudo cp subnet /usr/bin/subnet`
+```bash
+sudo cp subnet /usr/bin/subnet
+```
