@@ -13,9 +13,12 @@ TURQUOISE="\e[0;36m\033[1m"
 GRAY="\e[0;37m\033[1m"
 ORANGE="\e[38;5;208m"
 
+# Para crear el byte
 D2B=({0..1}{0..1}{0..1}{0..1}{0..1}{0..1}{0..1}{0..1})
 
 IFS=.
+
+#Insertar las variables en el prompt
 echo -e "${BLUE}Introduce la dirección ip:${RESET} "
 read -r ip1 ip2 ip3 ip4
 
@@ -24,29 +27,67 @@ read -r m1 m2 m3 m4
 
 echo -e "\n\n${PURPLE}================= NETINFO =================${RESET}\n"
 
+#Obtener la máscara en binario a través de cada valor
 maskBin=$(echo ${D2B[$m1]} ${D2B[$m2]} ${D2B[$m3]} ${D2B[$m4]})
+
+# Cuenta el número de 1 dentro de los 32 bits
 unos=$(grep -o "1" <<< "$maskBin" | wc -l)
 
-ip1=$(echo $[ $ip1 & $m1 ])
-ip2=$(echo $[ $ip2 & $m2 ])
-ip3=$(echo $[ $ip3 & $m3 ])
-ip4=$(echo $[ $ip4 & $m4 ])
+# AND logíco de cada uno de los bytes de IP y MÁSCARA
+ipa1=$(echo $[ $ip1 & $m1 ])
+ipa2=$(echo $[ $ip2 & $m2 ])
+ipa3=$(echo $[ $ip3 & $m3 ])
+ipa4=$(echo $[ $ip4 & $m4 ])
 
-dirRed=$(echo $ip1.$ip2.$ip3.$ip4)
-redBin=$(echo ${D2B[$ip1]} ${D2B[$ip2]} ${D2B[$ip3]} ${D2B[$ip4]})
-hosts=$(echo "scale=10; 2^(32-$unos)-2" | bc)
+# Dirección de red
+dirRed=$(echo $ipa1.$ipa2.$ipa3.$ipa4)
 
-#####NETMASK VALIDATOR######
+# Dirección de red en binario
+redBin=$(echo ${D2B[$ipa1]} ${D2B[$ipa2]} ${D2B[$ipa3]} ${D2B[$ipa4]})
 
+# Cálculo de número de hosts
+hosts=$(echo "scale=10; (2^(32-$unos)-2)" | bc )
+
+# Cálculo total de subredes
+redes=$(echo "scale=10; 2^$unos" | bc )
+
+###################### VALIDADORES ##########################
+
+#Variable de testeo
+good=0
+
+#Reseteo de la variable de entorno IFS
 IFS=$' \t\n'
+
+###################### IP VALIDATOR ########################
+
+#Array de cada valor decimal de la IP
+ipad=("$ip1" "$ip2" "$ip3" "$ip4")
+
+x=0
+
+# Iteramos sobre cada uno de los valores de la IP para comprobar que están entre 0 y 255
+# si es menor de 0 o mayor de 255 le sumamos 1 a "x"
+for i in ${ipad[@]};
+do
+    if [[ $i -lt 0 || $i -gt 255  ]];then
+	let x+=1
+	break
+    fi
+done
+
+# Cuando "x" sea mayor de 0 saca un error y suma uno a la variable de testeo
+if [[ $x -gt 0 ]]; then
+        echo -e "${RED}INTRODUCE UNA DIRECCIÓN IP VÁLIDA${RESET}"
+	let good+=1
+fi
+
+###################### NETMASK VALIDATOR #####################
+
 
 gmask=($(echo $maskBin | sed "s/\s//g" | sed "s/\B/&\n/g" ))
 
-#echo ${gmask[@]}
-
 lastInd=$((${#gmask[@]}-1))
-
-#echo $lastInd
 
 c=0
 k=0
@@ -60,25 +101,28 @@ do
     let c+=1
 done
 
-#echo ${gmask[@]:0:$last}
 bmask=($(echo ${gmask[@]:$last:$lastInd}))
 
-good=0
 
 for j in ${bmask[@]};
 do
     if [[ $j -eq "1" ]];then
-        echo -e "${RED}MÁSCARA ERRONEA${RESET}"
+        echo -e "${RED}INTRODUCE UNA MÁSCARA VÁLIDA${RESET}"
 	let good+=1
 	break
     fi
 
 done
 
+###############################################################
+
+# Si todo está correctamente entonces sacamos los valores
+
 if [[ $good -eq 0 ]]; then
 	echo -e "${ORANGE}NETMASK:${RESET} \t\t$maskBin"
 	echo -e "${ORANGE}CIDR:${RESET} \t\t\t/$unos"
 	echo -e "${ORANGE}NETWORK DIRECTION:${RESET} \t$dirRed"
 	echo -e "${ORANGE}BINARY NETWORK:${RESET} \t$redBin"
-	echo -e "${ORANGE}Nº OF POSSIBLE HOSTS:${RESET} \t$hosts\n"
+	echo -e "${ORANGE}Nº OF POSSIBLE HOSTS:${RESET} \t$hosts"
+	echo -e "${ORANGE}Nº OF TOTAL SUBNETS:${RESET} \t$redes "
 fi
