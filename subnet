@@ -25,7 +25,7 @@ read -r ip1 ip2 ip3 ip4
 echo -e "${BLUE}Introduce la máscara de subred:${RESET} "
 read -r m1 m2 m3 m4
 
-echo -e "\n\n${PURPLE}================= NETINFO =================${RESET}\n"
+echo -e "\n${PURPLE}================= SUBNET CALC =================${RESET}\n"
 
 #Obtener la máscara en binario a través de cada valor
 maskBin=$(echo ${D2B[$m1]} ${D2B[$m2]} ${D2B[$m3]} ${D2B[$m4]})
